@@ -1,34 +1,39 @@
 const express = require('express')
-const Posts = require('./models/post.model')
-const uploadImageToImageKit = require('../services/posts.services')
 const multer = require('multer')
-const imagekit = require('@imagekit/nodejs')
-
-const storage = multer.memoryStorage()
-const upload = multer({storage: storage})
-
 const app = express()
+const uploadImage = require('./service/posts.service')
+const PostModel = require('./model/posts.model')
 
-// app.post('/create-post', upload.single("image"), async (req,res) => {
-//     const result = await uploadImageToImageKit(req.file.buffer, req.file.originalname)
-//     console.log(req.files)
-//     console.log(req.body)
+app.use(express.json())
 
-//     res.status(201), ({
-//         'message': "File Created successfully",
-//         result
-//     })
-// })
+const upload = multer({ storage: multer.memoryStorage()})
 
-app.post('/create-post', upload.single("image"), async (req, res) => {
-    const result = await uploadImageToImageKit(req.file.buffer, req.file.originalname)
+app.use(express.json())
+
+
+app.post('/create-post', upload.single('image'), async (req, res) => {
     console.log(req.file)
     console.log(req.body)
+    const file = await uploadImage(req.file.buffer)
+    const Posts = await PostModel.create({
+        image: file.url,
+        caption: req.body.caption
+    })
 
     res.status(201).json({
-        message: "File Created successfully",
-        result
+        message: 'Post Created successfully',
+        file
     })
 })
+
+app.get('/get-posts', async (req,res) => {
+    const posts = await PostModel.find() 
+
+    res.status(200).json({
+        message: "Posts fetched successfully",
+        posts
+    })
+} )
+
 
 module.exports = app
