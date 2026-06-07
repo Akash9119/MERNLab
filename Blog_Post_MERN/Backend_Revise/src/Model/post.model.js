@@ -5,6 +5,6 @@ const post = mongoose.Schema({
     caption: String
 })
 
-const PostModel = mongoose.model('post', post)
+const PostModel = mongoose.model('posts', post )
 
 module.exports = PostModel
