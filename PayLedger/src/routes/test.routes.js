@@ -3,6 +3,6 @@ const testController = require('../controllers/test.controller')
 
 const route = express.Router()
 
-route.get('/api/test', testController.testRoute)
+route.get('/test', testController.testRoute)
 
 module.exports = route
