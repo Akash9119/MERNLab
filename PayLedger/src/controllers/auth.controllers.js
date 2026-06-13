@@ -3,6 +3,7 @@ const mongoose = require('mongoose')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 const cookie = require('cookie-parser')
+const emailService = require('../services/email.services')
 
 /**
  *  - User registration path
@@ -22,7 +23,7 @@ async function registerUser(req,res) {
 
     const newUser = await users.create({user, email, password})
 
-    const token = jwt.sign({user_id:user._id}, process.env.JWT_SECRET)
+    const token = jwt.sign({user_id:newUser._id}, process.env.JWT_SECRET)
 
     res.cookie('token', token, {maxAge: 3600000})
 
@@ -33,6 +34,14 @@ async function registerUser(req,res) {
     } catch (err) {
         console.log("Internal server error: ", err)
     }
+
+    // Example usage
+    await emailService.sendEmail(
+    'akashj.vasava@gmail.com',
+    'PayLedger User Registraion',
+    'This email notifies a user registration from PayLeger',
+    '<p>This is a test email sent with <b>Nodemailer</b> using OAuth2.</p>'
+    );
 
 
 }
@@ -48,7 +57,7 @@ async function loginUser(req,res) {
     const userExist = await users.findOne({email}).select('+password')
 
     if(!userExist) {
-        return res.status(401).josn({
+        return res.status(401).json({
             message: "User name or password is invalid"
         })
     }
@@ -61,7 +70,7 @@ async function loginUser(req,res) {
         })
     } 
 
-    const token = jwt.sign({user_id: users._id}, process.env.JWT_SECRET)
+    const token = jwt.sign({user_id: userExist._id}, process.env.JWT_SECRET)
     res.cookie('token', token, {maxAge: 36000})
 
     res.status(200).json({
