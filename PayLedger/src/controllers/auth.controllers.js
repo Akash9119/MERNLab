@@ -4,6 +4,14 @@ const jwt = require('jsonwebtoken')
 require('dotenv').config()
 const cookie = require('cookie-parser')
 const emailService = require('../services/email.services')
+const blacklist = require('../models/blacklist.models')
+
+const cookieOptions = {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 3600000
+}
 
 /**
  *  - User registration path
@@ -25,7 +33,7 @@ async function registerUser(req,res) {
 
     const token = jwt.sign({user_id:newUser._id}, process.env.JWT_SECRET)
 
-    res.cookie('token', token, {maxAge: 3600000})
+    res.cookie('token', token, cookieOptions)
 
     res.status(201).json({
         message: "New user Created",
@@ -71,7 +79,7 @@ async function loginUser(req,res) {
     } 
 
     const token = jwt.sign({user_id: userExist._id}, process.env.JWT_SECRET)
-    res.cookie('token', token, {maxAge: 36000})
+    res.cookie('token', token, cookieOptions)
 
     res.status(200).json({
         message: "User logged in successfully"
@@ -81,4 +89,34 @@ async function loginUser(req,res) {
 }
 
 
-module.exports = { registerUser, loginUser }
+/**
+ *  - User logout path
+ *  - /api/auth/log-out
+ */
+async function logoutUser(req,res) {
+    const token = req.token
+    const decoded = jwt.decode(token)
+    const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 3600000)
+
+    const tokenExist = await blacklist.findOne({ token })
+
+    if(!tokenExist) {
+        await blacklist.create({
+            token,
+            expiresAt
+        })
+    }
+
+    res.clearCookie('token', {
+        httpOnly: true,
+        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production"
+    })
+
+    res.status(200).json({
+        message: "User logged out successfully"
+    })
+}
+
+
+module.exports = { registerUser, loginUser, logoutUser }
